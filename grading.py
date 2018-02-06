@@ -1,55 +1,65 @@
+from ast import literal_eval
+from os import path
 from statistics import mean as m
 
 def addGrades():
   name = input('Student name: ')
   gradeString = 'Assign grade to ' + name + ': '
   grade = input(gradeString)
-  try:
-    isinstance(grades[name],list)
-  except KeyError as k:
-    print('Student doesn\'t exist. Creating...')
-    gradeArray = []
-    gradeArray.append(float(grade))
-    grades[name] = gradeArray
-  else:
-    print(name,' exists!')
+  if name in grades.keys():
+    print('Adding grade...')
     grades[name].append(float(grade))
-    
+  else: 
+    print('Student doesn\'t exist. Creating...')
+    gradeList = []
+    gradeList.append(float(grade))
+    grades[name] = gradeList
+
   print(grades)
   prompt('\n\nGrade added. Please select another action:')
 
+
+
 def removeStudent():
   name = input('Name of student to remove: ')
-  try:
-    isinstance(grades[name],list)
-  except KeyError as k:
-    prompt('\n\nThat student does not exist! Please select another action:')
-  else:
+
+  if name in grades.keys():
     del grades[name]
     prompt('\n\nStudent removed. Please select another action:')
+  else:
+    prompt('\n\nThat student does not exist! Please select another action:')
+
+
 
 def studentAverage():
   name = input('Name of student to average scores: ')
-  try:
-    isinstance(grades[name],list)
-  except KeyError as k:
-    prompt('\n\nThat student does not exist! Please select another action:')
-  else:
+
+  if name in grades.keys():
     print('Student average grade:',m(grades[name]))
     prompt('\n\nPlease select another action:')
+  else:
+    prompt('\n\nThat student does not exist! Please select another action:')
+    
+
 
 def classAverage():
   averageList = []
-  for k,v in grades.items():
-    for grade in v:
-      print(grade)
-      averageList.append(grade)
+  if len(grades) > 0:
+    for k,v in grades.items():
+      for grade in v:
+        averageList.append(grade)
 
-  print('Class average grade:',m(averageList))
-  prompt('\n\nPlease select another action:')
+    print('Class average grade:',m(averageList))
+    prompt('\n\nPlease select another action:')
+  else:
+    prompt('You have no students in the class!')
+
+
 
 def invalidAction():
   prompt('\n\nThat is not a valid option. Please choose from the list below (enter number):')
+
+
 
 def validate(action):
   try:
@@ -61,7 +71,6 @@ def validate(action):
 
 
 
-# LOGIN
 def login():
   name = input('Enter username: ')
   password = input('Enter password: ')
@@ -73,7 +82,6 @@ def login():
 
 
 
-# MAIN PROMPTER
 def prompt(prompt="\n\nHello, what would you like to do today?"):
   output = '''
   [1] Enter grades for a student
@@ -110,13 +118,10 @@ def prompt(prompt="\n\nHello, what would you like to do today?"):
 
 
 # INITIATE PROGRAM
-
-# Read in any existing data, otherwise create new file
-import os
-if os.path.isfile('./grades.txt'):
+if path.isfile('./grades.txt'):
   readableGradefile = open('grades.txt','r')
   filedata = readableGradefile.read()
-  grades = dict(filedata)
+  grades = literal_eval(filedata)
   readableGradefile.close()
 else:
   grades = {}
