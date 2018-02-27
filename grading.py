@@ -1,59 +1,90 @@
-from ast import literal_eval
-from os import path
 from statistics import mean as m
+import sqlite3 as db
+import json
+
+connection = db.connect('grading.db')
+connection.row_factory = db.Row
+cursor = connection.cursor()
+cursor.execute("CREATE TABLE IF NOT EXISTS student(first text, last text, grades text)")
+allRecords = cursor.execute("SELECT * FROM student").fetchall()
 
 def addGrades():
-  name = input('Student name: ')
-  gradeString = 'Assign grade to ' + name + ': '
-  grade = input(gradeString)
-  if name in grades.keys():
-    print('Adding grade...')
-    grades[name].append(float(grade))
-  else: 
-    print('Student doesn\'t exist. Creating...')
-    gradeList = []
-    gradeList.append(float(grade))
-    grades[name] = gradeList
+  gradeList = []
 
-  print(grades)
+  firstName = input('Student first name: ')
+  lastName = input('Student last name: ')
+  gradeString = 'Assign grade to ' + firstName + ' ' +  lastName + ': '
+  grade = input(gradeString)
+
+  # Query string and database query executed
+  query = "SELECT * FROM student WHERE first='" + firstName.lower() + "' AND last='" + lastName.lower() + "'"
+  results = cursor.execute(query).fetchall()
+
+  if results:
+    for record in results:
+      gradeList = json.loads(record["grades"])
+      gradeList.append(float(grade))
+      gradeList = json.dumps(gradeList)
+
+      updateString = "UPDATE student SET grades = '" + gradeList + "' WHERE first='" + firstName.lower() + "' AND last='" + lastName.lower() + "'"
+      cursor.execute(updateString)
+  else:
+    gradeList.append(float(grade))
+    gradeList = json.dumps(gradeList)
+    insertString = "INSERT INTO student VALUES('" + firstName.lower() + "','" + lastName.lower() + "','" + gradeList + "')"
+    cursor.execute(insertString)
+
   prompt('\n\nGrade added. Please select another action:')
 
 
 
 def removeStudent():
-  name = input('Name of student to remove: ')
+  firstName = input('Student first name: ')
+  lastName = input('Student last name: ')
 
-  if name in grades.keys():
-    del grades[name]
-    prompt('\n\nStudent removed. Please select another action:')
+  query = "SELECT * FROM student WHERE first='" + firstName.lower() + "' AND last='" + lastName.lower() + "'"
+  results = cursor.execute(query).fetchall()
+
+  if results:
+    for record in results:
+      deleteString = "DELETE FROM student WHERE first='" + firstName.lower() + "' AND last='" + lastName.lower() + "'"
+      cursor.execute(deleteString)
+      prompt('\n\nStudent removed. Please select another action:')
   else:
     prompt('\n\nThat student does not exist! Please select another action:')
 
 
 
 def studentAverage():
-  name = input('Name of student to average scores: ')
+  firstName = input('Student first name: ')
+  lastName = input('Student last name: ')
 
-  if name in grades.keys():
-    print('Student average grade:',m(grades[name]))
-    prompt('\n\nPlease select another action:')
+  query = "SELECT * FROM student WHERE first='" + firstName.lower() + "' AND last='" + lastName.lower() + "'"
+  results = cursor.execute(query).fetchall()
+
+  if results:
+    for record in results:
+      grades = json.loads(record["grades"])
+      print('Student average grade:',m(grades))
+      prompt('\n\nPlease select another action:')
   else:
     prompt('\n\nThat student does not exist! Please select another action:')
     
 
 
 def classAverage():
+  query = "SELECT * FROM student"
+  results = cursor.execute(query).fetchall()
   averageList = []
-  if len(grades) > 0:
-    for k,v in grades.items():
-      for grade in v:
-        averageList.append(grade)
 
+  if results:
+    for record in results:
+      grades = json.loads(record["grades"])
+      averageList += grades
     print('Class average grade:',m(averageList))
     prompt('\n\nPlease select another action:')
   else:
-    prompt('You have no students in the class!')
-
+    prompt('You have no students in the class!')    
 
 
 def invalidAction():
@@ -74,7 +105,7 @@ def validate(action):
 def login():
   name = input('Enter username: ')
   password = input('Enter password: ')
-  if (name == 'Admin') and (password == 'dn9922'):
+  if (name == 'Admin') and (password == '123456'):
     prompt()
   else:
     print('Login failure. Please try again.')
@@ -106,25 +137,13 @@ def prompt(prompt="\n\nHello, what would you like to do today?"):
     elif action == 4:
       classAverage()
     elif action == 5:
-      # Save file on exit
-      gradeString = str(grades)
-      writableGradefile = open('grades.txt','w')
-      writableGradefile.write(gradeString)
-      writableGradefile.close()
-      print('Thanks for using the Perfect Youth Training Helper Online Network. Bye!')
+      connection.commit()
+      connection.close()
+      print('Thanks for using the Prefered Youth Training Helper Online Network. Bye!')
     else:
       invalidAction()
 
 
-
-# INITIATE PROGRAM
-if path.isfile('./grades.txt'):
-  readableGradefile = open('grades.txt','r')
-  filedata = readableGradefile.read()
-  grades = literal_eval(filedata)
-  readableGradefile.close()
-else:
-  grades = {}
-
 # Trigger login
-login()
+# login()
+prompt()
